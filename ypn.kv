@@ -52,8 +52,8 @@ RootWidget:
         #it's a placeholder anyway.
         size_hint_y: 50
         text: "[CALENDAR]"
-        
-    # this really needs to be a ListView, not just a bunch of buttons...
+
+# this really needs to be a ListView, not just a bunch of buttons...
     # except Kivy is working on the ListView concept--they're deprecating it in
     # favor of an MVC "RecycleView" widget instead.
     # Looks like the documentation on this has come in. Not all of it, but
@@ -61,15 +61,6 @@ RootWidget:
     Label:
         size_hint_y: 10
         text: "Upcoming Events"
-    Label:
-        size_hint_y: 10
-        text: "Event 1"
-    Label:
-        size_hint_y: 10
-        text: "Event 2"
-    Label:
-        size_hint_y: 10
-        text: "Event 3"
 
 <DiscountsPage>:
     # Inherits from BoxLayout, has its own Python class

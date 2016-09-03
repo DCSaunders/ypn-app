@@ -20,8 +20,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import datetime
+import httplib2
+import time
+from apiclient import discovery
 from kivy.app import App
 from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.label import Label
+from authorise import get_credentials
 #from kivy.uix.recycleview import RecycleView
 #from kivy.uix.anchorlayout import AnchorLayout
 #from kivy.uix.listview import ListView, ListItemButton
@@ -29,6 +35,8 @@ from kivy.uix.boxlayout import BoxLayout
 #from kivy.properties import ListProperty, StringProperty, ObjectProperty
 # We'll probably need these later, when we want to modify their logic in the
 # Python file.
+
+YPN_ID = 'ypnmuscatine.org_p4tvrgupmk2rg4vimmkct8c4p8'
 
 class YpnApp(App):
     pass
@@ -76,7 +84,21 @@ class RootWidget(BoxLayout):
     #class RVTestDrivePage(RecycleView):
      #   pass
 
+class EventLabel(Label):
+    def __init__(self, start_time, end_time, summary):
+        super(EventLabel, self).__init__()
+        self.size_hint_y = 10
+        self.date_input_format = '%Y-%m-%dT%H:%M:%S'
+        date = self.get_date_time(start_time, '%A, %d %B')
+        start_time = self.get_date_time(start_time, '%H:%M')
+        end_time = self.get_date_time(end_time, '%H:%M')
+        self.text = '{} {}-{}: {}'.format(date, start_time, end_time, summary)
 
+    def get_date_time(self, date_time_str, date_output_format):
+        date_time_str = '-'.join(date_time_str.split('-')[:-1])
+        date_struct = time.strptime(date_time_str, self.date_input_format)
+        converted_date = time.strftime(date_output_format, date_struct)
+        return converted_date
 
 # I feel like these classes really should be OO'd into one class...
 # They really are basically all the same
@@ -87,12 +109,38 @@ class CalendarPage(BoxLayout):
     # at the top of each page. In place of the search bar, I think, because
     # search really should be its own page, accessible via the menu page.
     name = "Event Calendar"
+    upcoming_events_count = 5
 
+
+    def __init__(self):
+        super(BoxLayout, self).__init__()
+        self.upcoming_events()
+        
+    def upcoming_events(self):
+        credentials = get_credentials()
+        http = credentials.authorize(httplib2.Http())
+        service = discovery.build('calendar', 'v3', http=http)
+        now = datetime.datetime.utcnow().isoformat() + 'Z' 
+        print('Getting the upcoming 10 events')
+        eventsResult = service.events().list(
+            calendarId = YPN_ID + '@group.calendar.google.com',
+            timeMin=now, maxResults=self.upcoming_events_count,
+            singleEvents=True, orderBy='startTime').execute()
+        events = eventsResult.get('items', [])
+        if not events:
+            print('No upcoming events found.')
+        event_dict = {}
+        for event in events:
+            start = event['start'].get('dateTime', event['start'].get('date'))
+            end = event['end'].get('dateTime', event['end'].get('date'))
+            self.add_widget(EventLabel(start, end, event['summary']))
+        
 class DiscountsPage(BoxLayout):
     name = "Member Discounts"
     def search_button(self, search_bar):
         # May want to put this in root if there's a lot of common logic
         print search_bar.ids['search_input'].text
+        # do some searching with this
         
 class ArticlesPage(BoxLayout):
     name = "Newsletter"
