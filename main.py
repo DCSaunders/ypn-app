@@ -111,26 +111,20 @@ class CalendarPage(BoxLayout):
     name = "Event Calendar"
     upcoming_events_count = 5
 
-
     def __init__(self):
         super(BoxLayout, self).__init__()
+        self.credentials = get_credentials()
         self.upcoming_events()
         
     def upcoming_events(self):
-        credentials = get_credentials()
-        http = credentials.authorize(httplib2.Http())
+        http = self.credentials.authorize(httplib2.Http())
         service = discovery.build('calendar', 'v3', http=http)
         now = datetime.datetime.utcnow().isoformat() + 'Z' 
-        print('Getting the upcoming 10 events')
-        eventsResult = service.events().list(
+        events_result = service.events().list(
             calendarId = YPN_ID + '@group.calendar.google.com',
             timeMin=now, maxResults=self.upcoming_events_count,
             singleEvents=True, orderBy='startTime').execute()
-        events = eventsResult.get('items', [])
-        if not events:
-            print('No upcoming events found.')
-        event_dict = {}
-        for event in events:
+        for event in events_result.get('items', []):
             start = event['start'].get('dateTime', event['start'].get('date'))
             end = event['end'].get('dateTime', event['end'].get('date'))
             self.add_widget(EventLabel(start, end, event['summary']))
